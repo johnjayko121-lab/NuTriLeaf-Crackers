@@ -738,7 +738,7 @@ async function completeSale(){
   if(cash&&(isNaN(tend)||tend<T)){toast('Cash received is less than the total.','err');return;}
   P.busy=true;posMeta();
   try{
-    const no=await api('rpc/place_order',{method:'POST',body:{p_name:P.name.trim()||'Walk-in customer',p_phone:P.phone.trim()||'N/A',p_email:null,p_address:null,p_delivery:'pickup',p_payment:cash?'cod':'gcash',p_ref:cash?null:(P.ref.trim()||null),p_notes:'POS sale',p_items:L.map(l=>({product_id:l.id,qty:l.q}))}});
+    const no=await api('rpc/place_order',{method:'POST',body:{p_name:P.name.trim()||'Walk-in customer',p_phone:P.phone.trim()||'N/A',p_email:null,p_address:null,p_delivery:'pickup',p_payment:cash?'cod':'gcash',p_ref:cash?null:(P.ref.trim()||'POS-GCASH'),p_notes:'POS sale',p_items:L.map(l=>({product_id:l.id,qty:l.q}))}});
     let warn='';
     try{
       const rows=await api('orders?order_no=eq.'+encodeURIComponent(no)+'&select=id'),id=rows&&rows[0]&&rows[0].id;
@@ -1155,6 +1155,55 @@ $('#loginForm').addEventListener('submit',async e=>{
 });
 window.addEventListener('hashchange',()=>{const t=location.hash.replace('#/','');if(SESSION&&NAV.some(n=>n.id===t)&&t!==S.tab) go(t);});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden) poll();});
+
+
+/* =========================================================
+   PAGE: POSTS (photos, videos and updates for the public site)
+========================================================= */
+ICONS.posts='M3 5h18v14H3z M3 16l5-5 4 4 3-3 6 6';
+NAV.splice(NAV.findIndex(n=>n.id==='inquiries')+1,0,{id:'posts',label:'Posts',ic:'posts'});
+const MEDIA_URL=SB+'/storage/v1/object/public/media/', MAX_MB=50;
+function loadPosts(){api('posts?select=*&order=created_at.desc').then(r=>{S.posts=r||[];render();}).catch(e=>{S.posts=[];S.postsErr=e.message;render();});}
+pages.posts=function(){
+  if(!S.posts){loadPosts();return skeleton();}
+  const rows=S.posts.map(x=>{const m=(x.media||[])[0];
+    const th=m?(m.type==='video'?'<video src="'+E(m.url)+'#t=0.1" muted preload="metadata" style="width:84px;height:84px;object-fit:cover;border-radius:12px;background:#000"></video>':'<img src="'+E(m.url)+'" alt="" style="width:84px;height:84px;object-fit:cover;border-radius:12px">'):'<div style="width:84px;height:84px;border-radius:12px;background:var(--line)"></div>';
+    return '<div class="li" style="align-items:flex-start;gap:14px">'+th+'<div class="grow"><div class="t"><strong>'+E(x.title)+'</strong> '+(x.published?'<span class="pill">Live</span>':'<span class="pill">Hidden</span>')+'</div><div class="s" style="white-space:pre-wrap">'+E((x.body||'').slice(0,140))+'</div><div class="s">'+E(new Date(x.created_at).toLocaleString('en-PH'))+' · '+((x.media||[]).length)+' file(s)</div></div>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm ghost" data-act="postToggle" data-id="'+E(x.id)+'">'+(x.published?'Hide':'Show')+'</button><button class="btn sm ghost" data-act="postDel" data-id="'+E(x.id)+'">Delete</button></div></div>';}).join('');
+  return '<div class="page-h"><div><h2>Posts</h2><p>Share photos, videos and news. Posts show on your website\'s News &amp; Updates.</p></div></div>'+
+  (S.postsErr?'<div class="err" style="margin-bottom:16px">'+E(S.postsErr)+' (Did you run nutrileaf-posts-setup.sql in Supabase?)</div>':'')+
+  '<div class="card"><div class="card-h"><h3>New post</h3></div><div class="field"><label for="pTitle">Title</label><input class="input" id="pTitle" maxlength="120" placeholder="e.g. New Cheese flavor packaging!"></div>'+
+  '<div class="field"><label for="pBody">Message</label><textarea class="input" id="pBody" rows="4" maxlength="2000" placeholder="Write your update..."></textarea></div>'+
+  '<div class="field"><label for="pFiles">Photos and videos (each file up to '+MAX_MB+' MB)</label><input class="input" id="pFiles" type="file" multiple accept="image/*,video/mp4,video/webm,video/quicktime"></div>'+
+  '<button class="btn" id="pGo" data-act="postPublish">Publish</button> <span class="s" id="pStatus"></span></div>'+
+  '<div class="card" style="margin-top:16px"><div class="card-h"><h3>Your posts</h3></div>'+(rows?'<div class="list">'+rows+'</div>':'<p class="s">No posts yet. Make your first one above.</p>')+'</div>';
+};
+async function uploadMedia(file){
+  const ext=(file.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,5)||'bin';
+  const path='posts/'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext, t=await token();
+  const r=await fetch(SB+'/storage/v1/object/media/'+path,{method:'POST',headers:{apikey:KEY,Authorization:'Bearer '+t,'Content-Type':file.type||'application/octet-stream','x-upsert':'false'},body:file});
+  if(!r.ok){let m='Upload failed';try{m=(await r.json()).message||m;}catch(_){}throw new Error(file.name+': '+m);}
+  return {type:file.type.startsWith('video')?'video':'image',url:MEDIA_URL+path};
+}
+Object.assign(A,{
+  postPublish:async()=>{
+    const title=$('#pTitle').value.trim(), body=$('#pBody').value.trim(), files=[...$('#pFiles').files], st=$('#pStatus'), btn=$('#pGo');
+    if(!title) return toast('Please add a title.','err');
+    for(const f of files){if(f.size>MAX_MB*1048576) return toast(f.name+' is over '+MAX_MB+' MB. Please use a shorter or smaller file.','err');}
+    btn.disabled=true;
+    try{
+      const media=[];
+      for(let i=0;i<files.length;i++){st.textContent='Uploading '+(i+1)+' of '+files.length+'...';media.push(await uploadMedia(files[i]));}
+      st.textContent='Publishing...';
+      await api('posts',{method:'POST',body:{title:title,body:body||null,media:media,published:true}});
+      S.posts=null;toast('Post published!');render();
+    }catch(e){toast(e.message,'err');btn.disabled=false;st.textContent='';}
+  },
+  postToggle:async b=>{const x=S.posts.find(p=>p.id===b.dataset.id);if(!x) return;try{await api('posts?id=eq.'+encodeURIComponent(x.id),{method:'PATCH',body:{published:!x.published}});S.posts=null;render();}catch(e){toast(e.message,'err');}},
+  postDel:async b=>{const x=S.posts.find(p=>p.id===b.dataset.id);if(!x||!confirm('Delete "'+x.title+'" and its photos/videos? This cannot be undone.')) return;
+    try{const t=await token();for(const m of (x.media||[])){const path=String(m.url).split('/object/public/media/')[1];if(path) await fetch(SB+'/storage/v1/object/media/'+path,{method:'DELETE',headers:{apikey:KEY,Authorization:'Bearer '+t}}).catch(()=>{});}
+      await api('posts?id=eq.'+encodeURIComponent(x.id),{method:'DELETE'});S.posts=null;toast('Post deleted.');render();}catch(e){toast(e.message,'err');}}
+});
 
 (async function boot(){
   setTheme(localStorage.getItem(TKEY)||(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));
