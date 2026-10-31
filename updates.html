@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0e2813">
+<title>News &amp; Updates | NuTriLeaf Crackers</title>
+<meta name="description" content="Photos, videos and updates from NuTriLeaf Crackers, Balingasag.">
+<link rel="icon" href="images/nutrileaf-logo.jpg" type="image/jpeg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f2f5ee;--surface:#fff;--ink:#132016;--muted:#5f6c5b;--line:#e2e8da;--brand:#245b22;--onbrand:#fff;--lime:#94fc33;--deep:#0e2813;--r:22px;--shadow:0 1px 2px rgba(18,40,20,.05),0 12px 34px rgba(18,40,20,.07);--font:"Plus Jakarta Sans",Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light}
+[data-theme=dark]{--bg:#0b120d;--surface:#121c15;--ink:#e8f1e4;--muted:#94a58f;--line:#223226;--brand:#8fdc55;--onbrand:#0b120d;--shadow:0 1px 2px rgba(0,0,0,.4),0 12px 34px rgba(0,0,0,.35);color-scheme:dark}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1.6;min-height:100vh}
+a{text-decoration:none;color:inherit}img,video{max-width:100%}p{color:var(--muted)}
+.wrap{width:min(1200px,92%);margin:auto}
+header{background:var(--deep);border-radius:0 0 28px 28px;padding:18px 0;margin-bottom:34px}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px;font-weight:800;color:#fff}.brand img{width:44px;height:44px;border-radius:50%;object-fit:cover;background:#fff}
+.btn{display:inline-flex;align-items:center;gap:9px;border-radius:14px;padding:12px 20px;font-weight:800;font-size:.9rem;background:var(--lime);color:#0f300f}
+.btn:hover{filter:brightness(1.06)}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--brand);font-weight:800;font-size:.74rem;letter-spacing:.09em;text-transform:uppercase}
+h1{font-size:clamp(2.2rem,5vw,3.6rem);letter-spacing:-.03em;line-height:1.08;margin:14px 0 8px}
+.lead{max-width:620px;margin-bottom:34px;font-size:1.05rem}
+/* ---------- news & updates ---------- */
+.post-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px;align-items:start}
+.post{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.post:nth-child(even){margin-top:22px}
+.pm{background:#101810}.pm img,.pm video{width:100%;display:block;aspect-ratio:4/3;object-fit:cover}
+.pm.multi{display:grid;grid-template-columns:1fr 1fr;gap:2px}.pm.multi img,.pm.multi video{aspect-ratio:1/1}
+.pb{padding:18px 20px 22px}.pb small{color:var(--brand);font-weight:800;letter-spacing:.04em}
+.pb h3{margin:6px 0 8px}.pb p{white-space:pre-wrap;font-size:.95rem}
+@media(max-width:650px){.post:nth-child(even){margin-top:0}}
+.empty{padding:40px 0}
+footer{padding:50px 0 30px;color:var(--muted);font-size:.85rem}
+</style></head><body>
+<header><div class="wrap bar"><a class="brand" href="index.html"><img src="images/nutrileaf-logo.jpg" alt="NuTriLeaf Crackers logo"><span>NuTriLeaf</span></a><a class="btn" href="index.html#shop">Shop now →</a></div></header>
+<div class="wrap"><span class="eyebrow">Fresh from NuTriLeaf</span><h1>News &amp; updates.</h1><p class="lead">New photos, videos and stories from NuTriLeaf Crackers, made in Balingasag, Misamis Oriental.</p>
+<div class="post-grid" id="postsAll"></div><p class="empty" id="none" style="display:none">No updates yet. Please check back soon!</p>
+<footer>© 2026 NuTriLeaf Crackers · <a href="index.html" style="color:var(--brand);font-weight:800">Back to the main site</a></footer></div>
+<script>
+try{var t=localStorage.getItem('nl_site_theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=t;}catch(e){}
+function nlFeed(box,limit,done){
+  var U='https://mlqvabqzjjawprudttym.supabase.co',K='sb_publishable_Qtl70h0Z3YPMfUEYZiKPIA_2vliVDul';
+  fetch(U+'/rest/v1/posts?select=*&published=eq.true&order=created_at.desc'+(limit?'&limit='+limit:''),{headers:{apikey:K,Authorization:'Bearer '+K}})
+  .then(function(r){return r.ok?r.json():Promise.reject();})
+  .then(function(rows){box.innerHTML=''; (rows||[]).forEach(function(x){
+    var c=document.createElement('article'); c.className='post'; var ms=x.media||[];
+    if(ms.length){var g=document.createElement('div'); g.className='pm'+(ms.length>1?' multi':'');
+      ms.slice(0,4).forEach(function(m){var e;
+        if(m.type==='video'){e=document.createElement('video');e.src=m.url;e.controls=true;e.preload='metadata';e.playsInline=true;}
+        else{e=document.createElement('img');e.src=m.url;e.alt=x.title;e.loading='lazy';}
+        g.appendChild(e);}); c.appendChild(g);}
+    var b=document.createElement('div'); b.className='pb';
+    var d=document.createElement('small'); d.textContent=new Date(x.created_at).toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'});
+    var h=document.createElement('h3'); h.textContent=x.title; var p=document.createElement('p'); p.textContent=x.body||'';
+    b.appendChild(d);b.appendChild(h);if(x.body)b.appendChild(p); c.appendChild(b); box.appendChild(c);});
+    done(rows||[]);}).catch(function(){done([]);});
+}
+nlFeed(document.getElementById("postsAll"),0,function(r){if(!r.length)document.getElementById("none").style.display="";});
+</script></body></html>
