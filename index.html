@@ -306,6 +306,16 @@ footer{background:var(--deep);color:#dcebd7;padding:56px 0 28px;margin-top:40px;
 .lightbox-stage img{max-width:none;width:min(78%,78%);height:auto;transform-origin:center center;user-select:none;-webkit-user-drag:none;transition:transform .08s linear}
 .lightbox-help{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);background:var(--surface);padding:7px 12px;border-radius:999px;font-size:.72rem;color:var(--muted);border:1px solid var(--line);pointer-events:none;white-space:nowrap}
 
+/* ---------- news & updates ---------- */
+.post-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;align-items:start}
+.post{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.post:nth-child(even){margin-top:22px}
+.pm{background:#101810}.pm img,.pm video{width:100%;display:block;aspect-ratio:4/3;object-fit:cover}
+.pm.multi{display:grid;grid-template-columns:1fr 1fr;gap:2px}.pm.multi img,.pm.multi video{aspect-ratio:1/1}
+.pb{padding:18px 20px 22px}.pb small{color:var(--brand);font-weight:800;letter-spacing:.04em}
+.pb h3{margin:6px 0 8px}.pb p{white-space:pre-wrap;font-size:.95rem}
+@media(max-width:650px){.post:nth-child(even){margin-top:0}}
+
 /* ---------- responsive ---------- */
 @media(max-width:1080px){
   .nav-links{gap:2px;font-size:.82rem}.nav-links a{padding:8px 9px}
@@ -361,6 +371,7 @@ footer{background:var(--deep);color:#dcebd7;padding:56px 0 28px;margin-top:40px;
 <a href="#about">About</a>
 <a href="#ingredients">Ingredients</a>
 <a href="#flavors">Flavors</a>
+<a href="updates.html">Updates</a>
 <a href="#story">Our Story</a>
 <a href="#process">How It's Made</a>
 <a href="#gallery">Gallery</a>
@@ -556,6 +567,19 @@ footer{background:var(--deep);color:#dcebd7;padding:56px 0 28px;margin-top:40px;
 </div>
 </section>
 
+<!-- ================= NEWS & UPDATES ================= -->
+<section class="section" id="updates" style="display:none">
+<div class="container">
+<div class="section-head reveal">
+<span class="eyebrow">Fresh from NuTriLeaf</span>
+<h2>News &amp; updates.</h2>
+<p>New photos, videos and stories from our kitchen in Balingasag.</p>
+</div>
+<div class="post-grid" id="postsHome"></div>
+<p style="margin-top:28px"><a class="btn lg" href="updates.html">See all updates <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a></p>
+</div>
+</section>
+
 <!-- ================= IDENTITY ================= -->
 <section class="section" id="ingredients">
 <div class="container">
@@ -707,7 +731,7 @@ footer{background:var(--deep);color:#dcebd7;padding:56px 0 28px;margin-top:40px;
 <p>A crunchy taste of local greens — inspired by saluyot, malunggay, and spinach.</p>
 </div>
 <div class="footer-links">
-<a href="#home">Home</a><a href="#about">About</a><a href="#flavors">Flavors</a><a href="#shop">Shop</a><a href="#story">Story</a><a href="#process">Process</a><a href="#gallery">Gallery</a><a href="#contact">Contact</a>
+<a href="#home">Home</a><a href="#about">About</a><a href="#flavors">Flavors</a><a href="#shop">Shop</a><a href="updates.html">Updates</a><a href="#story">Story</a><a href="#process">Process</a><a href="#gallery">Gallery</a><a href="#contact">Contact</a>
 </div>
 </div>
 <div class="copyright">© 2026 NuTriLeaf Crackers. All rights reserved.</div>
@@ -1007,5 +1031,25 @@ lightboxStage.addEventListener('pointercancel',()=>{dragging=false;lightboxStage
   });
 })();
 </script>
-</body>
+<script>
+/* ---------- news & updates feed (latest 3 posts) ---------- */
+function nlFeed(box,limit,done){
+  var U='https://mlqvabqzjjawprudttym.supabase.co',K='sb_publishable_Qtl70h0Z3YPMfUEYZiKPIA_2vliVDul';
+  fetch(U+'/rest/v1/posts?select=*&published=eq.true&order=created_at.desc'+(limit?'&limit='+limit:''),{headers:{apikey:K,Authorization:'Bearer '+K}})
+  .then(function(r){return r.ok?r.json():Promise.reject();})
+  .then(function(rows){box.innerHTML=''; (rows||[]).forEach(function(x){
+    var c=document.createElement('article'); c.className='post'; var ms=x.media||[];
+    if(ms.length){var g=document.createElement('div'); g.className='pm'+(ms.length>1?' multi':'');
+      ms.slice(0,4).forEach(function(m){var e;
+        if(m.type==='video'){e=document.createElement('video');e.src=m.url;e.controls=true;e.preload='metadata';e.playsInline=true;}
+        else{e=document.createElement('img');e.src=m.url;e.alt=x.title;e.loading='lazy';}
+        g.appendChild(e);}); c.appendChild(g);}
+    var b=document.createElement('div'); b.className='pb';
+    var d=document.createElement('small'); d.textContent=new Date(x.created_at).toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'});
+    var h=document.createElement('h3'); h.textContent=x.title; var p=document.createElement('p'); p.textContent=x.body||'';
+    b.appendChild(d);b.appendChild(h);if(x.body)b.appendChild(p); c.appendChild(b); box.appendChild(c);});
+    done(rows||[]);}).catch(function(){done([]);});
+}
+nlFeed(document.getElementById("postsHome"),3,function(r){if(r.length)document.getElementById("updates").style.display="";});
+</script></body>
 </html>
